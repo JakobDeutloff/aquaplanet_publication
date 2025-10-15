@@ -1,61 +1,15 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-from src.calc_variables import (
-    calc_heating_rates_t,
-)
-from src.read_data import load_random_datasets, load_definitions
+from src.read_data import load_definitions, load_hr_and_cf
 # %%
 runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles = (
     load_definitions()
 )
-datasets = load_random_datasets(version="temp")
-datasets_processed = load_random_datasets(version="processed")
-for run in runs:
-    # Assign all variables from ds to datasets if dim == index
-    ds = datasets_processed[run].sel(index=slice(0, 1e6))
-    datasets[run] = datasets[run].assign(
-        **{var: ds[var] for var in ds.variables if ("index",) == ds[var].dims}
-    )
-# %% calculate heating rates and cf 
-hrs = {}
-hrs_binned_net = {}
-hrs_binned_sw = {}
-hrs_binned_lw = {}
-iwp_bins = np.logspace(-4, 1, 51)
+hrs_binned_net, hrs_binned_lw, hrs_binned_sw, cf_binned = load_hr_and_cf()
+iwp_bins = np.logspace(-4, np.log10(40), 51)
 iwp_points = (iwp_bins[:-1] + iwp_bins[1:]) / 2
-for run in runs:
-    print(run)
-    hrs[run] = calc_heating_rates_t(
-        datasets[run]["rho"],
-        datasets[run]["rsd"] - datasets[run]["rsu"],
-        datasets[run]["rld"] - datasets[run]["rlu"],
-        datasets[run]["zg"],
-    )
-    hrs_binned_net[run] = (
-        hrs[run]["net_hr"].groupby_bins(datasets[run]["iwp"], bins=iwp_bins).mean()
-    )
-    hrs_binned_sw[run] = (
-        hrs[run]["sw_hr"].groupby_bins(datasets[run]["iwp"], bins=iwp_bins).mean()
-    )
-    hrs_binned_lw[run] = (
-        hrs[run]["lw_hr"].groupby_bins(datasets[run]["iwp"], bins=iwp_bins).mean()
-    )
 
-cf = {}
-cf_binned = {}
-for run in runs:
-    cf[run] = (
-        (
-            datasets[run]["cli"]
-            + datasets[run]["clw"]
-            + datasets[run]["qr"]
-            + datasets[run]["qg"]
-            + datasets[run]["qs"]
-        )
-        > 5e-7
-    ).astype(int)
-    cf_binned[run] = cf[run].groupby_bins(datasets[run]["iwp"], bins=iwp_bins).mean()
 
 # %% plot
 fig, axes  = plt.subplots(1, 3, figsize=(10, 3.5), sharex=True, sharey=True)
@@ -93,7 +47,7 @@ axes[2].pcolormesh(
 for i, run in enumerate(runs):
     contour = axes[i].contour(
         iwp_points,
-        datasets[run]['temp'],
+        cf_binned[run]['temp'],
         cf_binned[run].T,
         colors="k",
         levels=[0.1, 0.3, 0.5, 0.7, 0.9],
@@ -138,5 +92,5 @@ for i, ax in enumerate(axes):
         fontweight="bold",
     )
 
-fig.savefig("plots/publication/heating_rates.pdf", bbox_inches="tight", dpi=300)
+fig.savefig("plots/heating_rates.pdf", bbox_inches="tight", dpi=300)
 # %%

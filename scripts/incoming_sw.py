@@ -1,7 +1,7 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-from src.read_data import load_random_datasets, load_definitions
+from src.read_data import load_definitions, load_sw_metrics
 
 # %% load CRE data
 runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles = (
@@ -9,54 +9,20 @@ runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles =
 )
 iwp_bins = np.logspace(-4, np.log10(40), 51)
 iwp_points = (iwp_bins[:-1] + iwp_bins[1:]) / 2
-datasets = load_random_datasets()
+sw_down_binned, rad_time_binned, lat_binned = load_sw_metrics()
 
-# %% mean SW down for I>1
-for run in runs:
-    sw_down = datasets[run]["rsdt"].where(datasets[run]["iwp"] > 1).mean()
-    print(f"{run} {sw_down.values}")
-
-# %% bin quantities
-time_binned = {}
-rad_time_binned = {}
-sw_down_binned = {}
-lat_binned = {}
-time_std = {}
-temp_binned = {}
-for run in runs:
-    time_binned[run] = (
-        datasets[run]["time_local"].groupby_bins(datasets[run]["iwp"], iwp_bins).mean()
-    )
-    sw_down_binned[run] = (
-        datasets[run]["rsdt"].groupby_bins(datasets[run]["iwp"], iwp_bins).mean()
-    )
-    lat_binned[run] = (
-        np.abs(datasets[run]["clat"])
-        .groupby_bins(datasets[run]["iwp"], iwp_bins)
-        .mean()
-    )
-    rad_time_binned[run] = (
-        np.abs(datasets[run]["time_local"] - 12)
-        .groupby_bins(datasets[run]["iwp"], iwp_bins)
-        .mean()
-    )
-    temp_binned[run] = (
-        datasets[run]["hc_top_temperature"]
-        .groupby_bins(datasets[run]["iwp"], iwp_bins)
-        .mean()
-    )
 
 # %% plot mean time and SW down
 fig, axes = plt.subplots(1, 3, figsize=(10, 3.5), sharex=True)
 
 for run in runs:
-    sw_down_binned[run].sel(iwp_bins=slice(1e-4, 20)).plot(
+    sw_down_binned[run].sel(iwp_points=slice(1e-4, 20)).plot(
         ax=axes[0], label=line_labels[run], color=colors[run]
     )
-    rad_time_binned[run].sel(iwp_bins=slice(1e-4, 20)).plot(
+    rad_time_binned[run].sel(iwp_points=slice(1e-4, 20)).plot(
         ax=axes[1], label=line_labels[run], color=colors[run]
     )
-    lat_binned[run].sel(iwp_bins=slice(1e-4, 20)).plot(
+    lat_binned[run].sel(iwp_points=slice(1e-4, 20)).plot(
         ax=axes[2], label=line_labels[run], color=colors[run]
     )
 
@@ -92,6 +58,6 @@ for ax, letter in zip(axes, ["a", "b", "c"]):
     )
 axes[2].invert_yaxis()
 fig.tight_layout()
-fig.savefig("plots/publication/sw_incoming.pdf", bbox_inches="tight")
+fig.savefig("plots/sw_incoming.pdf", bbox_inches="tight")
 
 # %%

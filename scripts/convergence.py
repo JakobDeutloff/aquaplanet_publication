@@ -1,33 +1,17 @@
 # %%
 import numpy as np
-import xarray as xr
 import matplotlib.pyplot as plt
-import pickle as pkl
-from src.read_data import load_definitions
-
+from src.read_data import load_definitions, load_iwp_distributions, load_iwp_distributions_30, load_iwp_distributions_60
 
 # %% load histograms 
 runs = ['jed0011', 'jed0022', 'jed0033']
-names = {
-    'jed0011': 'control',
-    'jed0022': 'plus4K',
-    'jed0033': 'plus2K'
-}
-
-hists_30 = {}
-hists_60 = {}
-hists_full = {}
 
 definitions = load_definitions()
 colors = definitions[2]
+hists_full = load_iwp_distributions()
+hists_30 = load_iwp_distributions_30()
+hists_60 = load_iwp_distributions_60()
 
-for run in runs:
-    with open(f'/work/bm1183/m301049/icon_hcap_data/{names[run]}/production/iwp_hists/{run}_iwp_hist30_days.pkl', 'rb') as f:
-        hists_30[run] = pkl.load(f)
-    with open(f'/work/bm1183/m301049/icon_hcap_data/{names[run]}/production/iwp_hists/{run}_iwp_hist60_days.pkl', 'rb') as f:
-        hists_60[run] = pkl.load(f)
-    with open(f'/work/bm1183/m301049/icon_hcap_data/{names[run]}/production/iwp_hists/{run}_iwp_histfull.pkl', 'rb') as f:
-        hists_full[run] = pkl.load(f)
 
 # %% plot histograms
 iwp_bins = np.logspace(-4, np.log10(40), 51)
@@ -92,6 +76,6 @@ for ax, letter in zip(axes, ["a", "b"]):
         fontweight="bold",
         va="top",
     )
-fig.savefig('plots/publication/sup_conv.pdf', bbox_inches='tight')
+fig.savefig('plots/sup_conv.pdf', bbox_inches='tight')
 
 # %%

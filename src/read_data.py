@@ -1,129 +1,115 @@
 import xarray as xr
 import pickle
-from src.grid_helpers import merge_grid, fix_time
 
 runs = ["jed0011", "jed0022", "jed0033"]
-followups = {"jed0011": "jed0111", "jed0022": "jed0222", "jed0033": "jed0333"}
-configs = {"jed0011": "icon-mpim", "jed0022": "icon-mpim-4K", "jed0033": "icon-mpim-2K"}
-experiments = {"jed0011": "control", "jed0022": "plus4K", "jed0033": "plus2K"}
+experiments = {
+    "jed0011": "control",
+    "jed0022": "plus4K",
+    "jed0033": "plus2K",
+    "jed0224": "const_ozone",
+}
 
 
-def read_cloudsat(year):
+def get_path():
     """
-    Function to read CloudSat for a given year
+    Get the path to the data directory.
     """
-
-    path_cloudsat = "/work/bm1183/m301049/cloudsat/"
-    cloudsat = xr.open_dataset(
-        path_cloudsat + year + "-07-01_" + str(int(year) + 1) + "-07-01_fwp.nc"
-    )
-    # convert ot pandas
-    cloudsat = cloudsat.to_pandas()
-    # select tropics
-    lat_mask = (cloudsat["lat"] <= 20) & (cloudsat["lat"] >= -20)
-
-    return cloudsat[lat_mask]
+    return "/work/bm1183/m301049/icon_hcap_data/publication"
 
 
-def load_parameters(run):
+def load_iwp_distributions():
     """
-    Load the parameters needed for the model.
+    Load the IWP distributions for the model.
 
     Returns
     -------
     dict
-        Dictionary containing the parameters.
+        Dictionary containing the IWP distributions.
     """
+    path = get_path()
+    iwp_dists = xr.open_dataset(f"{path}/distributions/iwp_distributions.nc")
 
-    with open(f"data/params/{run}_hc_albedo_params.pkl", "rb") as f:
-        hc_albedo = pickle.load(f)
-    with open(f"data/params/{run}_hc_emissivity_params.pkl", "rb") as f:
-        hc_emissivity = pickle.load(f)
-    with open(f"data/params/{run}_C_h2o_params.pkl", "rb") as f:
-        c_h2o = pickle.load(f)
-    with open(f"data/params/{run}_lower_trop_params.pkl", "rb") as f:
-        lower_trop_params = pickle.load(f)
-
-    return {
-        "alpha_hc": hc_albedo,
-        "em_hc": hc_emissivity,
-        "c_h2o": c_h2o,
-        "R_l": lower_trop_params["R_l"],
-        "R_cs": lower_trop_params["R_cs"],
-        "f": lower_trop_params["f"],
-        "a_l": lower_trop_params["a_l"],
-        "a_cs": lower_trop_params["a_cs"],
-    }
+    return iwp_dists
 
 
-def load_lt_quantities(run):
+def load_iwp_distributions_30():
     """
-    Load the lower tropospheric quantities needed for the model.
+    Load the IWP distributions for the model for 30 days.
 
     Returns
     -------
     dict
-        Dictionary containing the lower tropospheric quantities.
+        Dictionary containing the IWP distributions.
     """
+    path = get_path()
+    iwp_dists = xr.open_dataset(f"{path}/distributions/iwp_dist_30_days.nc")
 
-    with open(f"data/{run}_lower_trop_vars_mean.pkl", "rb") as f:
-        lt_quantities = pickle.load(f)
-
-    return lt_quantities
+    return iwp_dists
 
 
-def load_iwp_hists():
+def load_iwp_distributions_60():
     """
-    Load the IWP histograms for the model.
+    Load the IWP distributions for the model for 60 days.
 
     Returns
     -------
     dict
-        Dictionary containing the IWP histograms.
+        Dictionary containing the IWP distributions.
     """
-    iwp_hists = {}
+    path = get_path()
+    iwp_dists = xr.open_dataset(f"{path}/distributions/iwp_dist_60_days.nc")
+
+    return iwp_dists
+
+
+def load_daily_cycle_dists():
+    """
+    Load the distributions of deep convective clouds over local time and incoming SW.
+    Returns
+    -------
+    dict
+        Dictionary containing the daily cycle distributions.
+
+    xarray.Dataarray
+        Dataarray containing the incoming SW radiation.
+    """
+    path = get_path()
+    daily_cycle_dists = {}
     for run in runs:
-        with open(
-            f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/{run}_iwp_hist.pkl",
-            "rb",
-        ) as f:
-            iwp_hists[run] = pickle.load(f)
+        daily_cycle_dists[run] = xr.open_dataset(
+            f"{path}/distributions/{run}_deep_clouds_daily_cycle.nc"
+        )
 
-    return iwp_hists
+    SW_in = xr.open_dataarray(f"{path}/incoming_sw/SW_in_daily_cycle.nc")
+    return daily_cycle_dists, SW_in
 
-
-def load_random_datasets(version="processed"):
+def load_hr_components():
     """
-    Load the random datasets for the model.
-
-    Parameters
-    ----------
-    processed : bool, optional
-        If True, load the processed datasets, otherwise load the raw datasets. Default is True.
+    Load the mean heating rate components.
 
     Returns
     -------
     dict
-        Dictionary containing the random datasets.
-    """
+        Dictionary containing the mean flux divergence.
+    
+    dict
+        Dictionary containing the mean heating rate.
 
-    datasets = {}
-    if version == "processed":
-        for run in runs:
-            datasets[run] = xr.open_dataset(
-                f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_randsample_processed_64.nc"
-            )
-    elif version == "temp":
-        for run in runs:
-            datasets[run] = xr.open_dataset(
-                f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_randsample_tgrid_20.nc"
-            )
-    else:
-        for run in runs:
-            datasets[run] = xr.open_dataset(
-                f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_randsample.nc"
-            )
-    return datasets
+    dict
+        Dictionary containing the mean density.
+    """
+    path = get_path()
+    mean_fluxdiv = {}
+    mean_hr = {}
+    mean_rho = {}
+    for run in runs:
+        mean_fluxdiv[run] = xr.open_dataarray(
+            f"{path}/flux_conv/{run}_flux_divergence.nc"
+        )
+        mean_hr[run] = xr.open_dataarray(f"{path}/flux_conv/{run}_heating_rate.nc")
+        mean_rho[run] = xr.open_dataarray(f"{path}/flux_conv/{run}_air_density.nc")
+
+    return mean_fluxdiv, mean_hr, mean_rho
 
 
 def load_vgrid():
@@ -135,10 +121,10 @@ def load_vgrid():
     xarray.Dataset
         Dataset containing the vertical grid.
     """
-
+    path = get_path()
     vgrid = (
         xr.open_dataset(
-            "/work/bm1183/m301049/icon-mpim/experiments/jed0001/atm_vgrid_angel.nc"
+            f"{path}/grid/atm_vgrid_angel.nc"
         )
         .mean("ncells")
         .rename({"height": "height_2", "height_2": "height"})
@@ -156,141 +142,137 @@ def load_cre():
     dict
         Dictionary containing the CRE data.
     """
-
+    path = get_path()
     cre_data = {}
     for run in runs:
         cre_data[run] = xr.open_dataset(
-            f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/cre/{run}_cre_raw.nc"
+            f"{path}/cre/{run}_cre_raw.nc"
         )
 
     return cre_data
 
-
-def load_daily_2d_data(vars, frequency="day", tropics_only=True, load=True):
+def load_hc_temp():
     """
-    Load the one timestep per day 2D data.
-
-    Parameters
-    ----------
-    vars : list
-        List of variables to load.
-    frequency : str, optional
-        Frequency of the data, either 'day' or 'hour'. Default is 'day'.
-    tropics_only : bool, optional
-        If True, only load data for the tropics (latitude between -20 and 20). Default is True.
-    load : bool, optional
-        If True, load the data into memory. Default is True.
+    Load the temperature at the top of the high clouds.
 
     Returns
     -------
     dict
-        Dictionary containing the 2D data.
+        Dictionary containing the temperature at the top of the high clouds.
     """
-    datasets = {}
-    for run in runs:
-        ds_first_month = (
-            xr.open_mfdataset(
-                f"/work/bm1183/m301049/{configs[run]}/experiments/{run}/{run}_atm_2d_19*.nc"
-            )
-            .pipe(merge_grid)
-            .pipe(fix_time)[vars]
-        )
-        ds_last_two_months = (
-            xr.open_mfdataset(
-                f"/work/bm1183/m301049/{configs[run]}/experiments/{followups[run]}/{followups[run]}_atm_2d_19*.nc"
-            )
-            .pipe(merge_grid)
-            .pipe(fix_time)[vars]
-        )
-        if frequency == "day":
-            ds_first_month = ds_first_month.sel(
-                time=(ds_first_month.time.dt.minute == 0)
-                & (ds_first_month.time.dt.hour == 0)
-            )
-            ds_last_two_months = ds_last_two_months.sel(
-                time=(ds_last_two_months.time.dt.minute == 0)
-                & (ds_last_two_months.time.dt.hour == 0)
-            )
-        elif frequency == "hour":
-            ds_first_month = ds_first_month.sel(
-                time=(ds_first_month.time.dt.minute == 0)
-            )
-            ds_last_two_months = ds_last_two_months.sel(
-                time=(ds_last_two_months.time.dt.minute == 0)
-            )
+    path = get_path()
+    hc_temp = xr.open_dataset(f"{path}/hc_temp/hc_temperatures.nc")
 
-        if tropics_only:
-            ds_first_month = ds_first_month.where(
-                (ds_first_month["clat"] < 20) & (ds_first_month["clat"] > -20),
-                drop=True,
-            )
-            ds_last_two_months = ds_last_two_months.where(
-                (ds_last_two_months["clat"] < 20) & (ds_last_two_months["clat"] > -20),
-                drop=True,
-            )
+    return hc_temp
 
-        if load:
-            datasets[run] = xr.concat(
-                [ds_first_month, ds_last_two_months], dim="time"
-            ).load()
-        else:
-            datasets[run] = xr.concat([ds_first_month, ds_last_two_months], dim="time")
-    return datasets
-
-
-def load_daily_average_2d_data(vars):
+def load_hr_and_cf():
     """
-    Load the daily average 2D data.
-
-    Parameters
-    ----------
-    vars : list
-        List of variables to load.
-
+    Load Heating rates and cloud fraction profiles binned by IWP.
+    
     Returns
     -------
     dict
-        Dictionary containing the daily average 2D data.
+        Dictionary containing the net heating rates.
+    dict
+        Dictionary containing the longwave heating rates.
+    dict
+        Dictionary containing the shortwave heating rates.
+    dict
+        Dictionary containing cloud fraction"""
+    
+    path = get_path()
+    hrs_binned = xr.open_dataset(f"{path}/heating_rates/hr_net.nc")
+    hrs_sw_binned = xr.open_dataset(f"{path}/heating_rates/hr_sw.nc")
+    hrs_lw_binned = xr.open_dataset(f"{path}/heating_rates/hr_lw.nc")
+    cf_binned = xr.open_dataset(f"{path}/heating_rates/cf.nc")
+
+
+    return hrs_binned, hrs_lw_binned, hrs_sw_binned, cf_binned
+
+def load_sw_metrics():
     """
-    datasets = {}
-    for run in runs:
-        ds_first_month = (
-            xr.open_mfdataset(
-                f"/work/bm1183/m301049/{configs[run]}/experiments/{run}/{run}_atm_2d_daymean_19*.nc"
-            )
-            .pipe(merge_grid)
-            .pipe(fix_time)[vars]
-        )
-        ds_last_two_months = (
-            xr.open_mfdataset(
-                f"/work/bm1183/m301049/{configs[run]}/experiments/{followups[run]}/{followups[run]}_atm_2d_daymean_19*.nc"
-            )
-            .pipe(merge_grid)
-            .pipe(fix_time)[vars]
-        )
-        datasets[run] = xr.concat(
-            [ds_first_month, ds_last_two_months], dim="time"
-        ).load()
-
-    return datasets
-
-
-def load_cape_cin():
-    """
-    Load the CAPE and CIN data.
-
+    Load shortwave metrics binned by IWP.
+    
     Returns
     -------
     dict
-        Dictionary containing the CAPE and CIN data.
+        Dictionary containing the shortwave down at TOA.
+    dict
+        Dictionary containing the time difference to noon.
+    dict
+        Dictionary containing the latitude of deep convective clouds.
     """
-    cape_cin_data = {}
-    for run in runs:
-        cape_cin_data[run] = xr.open_dataset(
-            f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_cape_cin.nc"
-        )
+    path = get_path()
+    sw_down_binned = xr.open_dataset(f"{path}/incoming_sw/sw_incoming.nc")
+    rad_time_binned = xr.open_dataset(f"{path}/incoming_sw/time_difference.nc")
+    lat_binned = xr.open_dataset(f"{path}/incoming_sw/lat_distance.nc")
 
-    return cape_cin_data
+    return sw_down_binned, rad_time_binned, lat_binned
+
+def load_lc_fractions():
+    """
+    Load low cloud fractions binned by IWP.
+    
+    Returns
+    -------
+    dict
+        Dictionary containing the low cloud fractions with tuning factor.
+    dict
+        Dictionary containing the low cloud fractions without tuning factor.
+    """
+    path = get_path()
+    lc_binned = {}
+    lc_binned_raw = {}
+    for run in runs:
+        lc_binned[run] = xr.open_dataarray(f"{path}/lc_fraction/{run}_lc_frac.nc")
+        lc_binned_raw[run] = xr.open_dataarray(f"{path}/lc_fraction/{run}_lc_frac_raw.nc")
+
+    return lc_binned, lc_binned_raw
+
+def load_stab_iris():
+    """
+    Load heating rate, stability, subsidence, and convergence profiles.
+    Returns
+    -------
+    dict
+        Dictionary containing the heating rate profiles.
+    dict
+        Dictionary containing the stability profiles.
+    dict
+        Dictionary containing the subsidence profiles.
+    dict
+        Dictionary containing the convergence profiles.
+    """
+    path = get_path()
+    hrs = {}
+    stab = {}
+    subs = {}
+    conv = {}
+    for run in runs:
+        hrs[run] = xr.open_dataset(f"{path}/stab_iris/{run}_heating_rate.nc")
+        stab[run] = xr.open_dataarray(f"{path}/stab_iris/{run}_stability.nc")
+        subs[run] = xr.open_dataarray(f"{path}/stab_iris/{run}_subsidence.nc")
+        conv[run] = xr.open_dataarray(f"{path}/stab_iris/{run}_convergence.nc")
+    
+    subs_cont = xr.open_dataarray(f"{path}/stab_iris/jed0022_subsidence_const_hr.nc")
+    conv_cont = xr.open_dataarray(f"{path}/stab_iris/jed0022_convergence_const_hr.nc")
+
+    return hrs, stab, subs, conv, subs_cont, conv_cont
+
+def load_t_profiles():
+    """
+    Load temperature profiles.
+    Returns
+    -------
+    dict
+        Dictionary containing the temperature profiles.
+    """
+    path = get_path()
+    t_profiles = {}
+    for run in [*runs, "jed2224"]:
+        t_profiles[run] = xr.open_dataarray(f"{path}/t_profiles/{run}_t_profile_clearsky.nc")
+
+    return t_profiles
 
 
 def load_definitions():

@@ -1,47 +1,10 @@
 # %%
-import xarray as xr
 import matplotlib.pyplot as plt
-from src.calc_variables import calc_flux_conv_t
-from src.read_data import load_definitions
+from src.read_data import load_definitions, load_hr_components
 
 # %%
 runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles = load_definitions()
-datasets = {}
-datasets
-for run in runs:
-    datasets[run] = xr.open_dataset(
-        f"/work/bm1183/m301049/icon_hcap_data/{exp_name[run]}/production/random_sample/{run}_randsample_tgrid_20.nc"
-    ).sel(temp=slice(200, None))
-    ds = xr.open_dataset(
-        f"/work/bm1183/m301049/icon_hcap_data/{exp_name[run]}/production/random_sample/{run}_randsample_processed_64.nc"
-    ).sel(index=slice(0, 1e6))
-    # Assign all variables from ds to datasets if dim == index
-    datasets[run] = datasets[run].assign(
-        **{var: ds[var] for var in ds.variables if ("index",) == ds[var].dims}
-    )
-
-# %% determine tropopause height and clearsky
-masks_clearsky = {}
-for run in runs:
-    masks_clearsky[run] = (
-        datasets[run]["clivi"] + datasets[run]["qsvi"] + datasets[run]["qgvi"]
-    ) < 1e-2
-# %% calculate convergence of net flux
-f_conv = {}
-mean_rho = {}
-mean_hr = {}
-for run in runs:
-    f_conv[run] = (
-        calc_flux_conv_t(
-            (datasets[run]["rsd"] - datasets[run]["rsu"])
-            + (datasets[run]["rld"] - datasets[run]["rlu"]),
-            datasets[run]["zg"],
-        )
-        .where(masks_clearsky[run])
-        .mean("index")
-    )
-    mean_rho[run] = datasets[run]["rho"].where(masks_clearsky[run]).mean("index")
-    mean_hr[run] = (f_conv[run] * 86400) / (mean_rho[run] * 1004)
+f_conv, mean_hr, mean_rho = load_hr_components()
 # %% plot convergence of net flux
 fig, axes = plt.subplots(1, 3, figsize=(8, 4), sharey=True)
 
@@ -60,7 +23,7 @@ for run in runs:
         color=colors[run],
     )
     axes[1].plot(
-        f_conv[run].where(masks_clearsky[run]).mean("index"),
+        f_conv[run],
         f_conv[run]["temp"],
         label=line_labels[run],
         color=colors[run],
@@ -97,5 +60,5 @@ for ax, letter in zip(axes, ["a", "b", "c"]):
         va="top",
     )
 fig.tight_layout()
-fig.savefig("plots/publication/flux_conv.pdf", bbox_inches="tight")
+fig.savefig("plots/flux_conv.pdf", bbox_inches="tight")
 # %%

@@ -1,46 +1,20 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from src.read_data import (
-    read_cloudsat,
-    load_iwp_hists,
+    load_iwp_distributions,
     load_cre,
-    load_random_datasets,
     load_definitions,
 )
-
-# mpl.use("WebAgg")  # Use WebAgg backend for interactive plotting
 
 # %% load data
 runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles = (
     load_definitions()
 )
-datasets = load_random_datasets()
-histograms = load_iwp_hists()
+histograms = load_iwp_distributions()
 cre = load_cre()
-# %% read cloudsat and dardar
-cloudsat_raw = read_cloudsat("2008")
-dardar_raw = xr.open_dataset("/work/bm1183/m301049/dardar/dardar_iwp_2008.nc")
-mask = (dardar_raw["latitude"] > -20) & (dardar_raw["latitude"] < 20)
-dardar_raw = dardar_raw.where(mask)
-
-# %% average over pairs of three entries in cloudsat to get to a resolution of 4.8 km
-cloudsat = cloudsat_raw.to_xarray().coarsen({"scnline": 3}, boundary="trim").mean()
-dardar = dardar_raw.coarsen({"scanline": 3}, boundary="trim").mean()
-
-# %% calculate iwp hist
-iwp_bins = np.logspace(-4, np.log10(40), 51)
-histograms["cloudsat"], edges = np.histogram(
-    cloudsat["ice_water_path"] / 1e3, bins=iwp_bins, density=False
-)
-histograms["cloudsat"] = histograms["cloudsat"] / len(cloudsat["ice_water_path"])
-histograms["dardar"], _ = np.histogram(
-    dardar["iwp"] / 1e3, bins=iwp_bins, density=False
-)
-histograms["dardar"] = histograms["dardar"] / np.isfinite(dardar["iwp"]).sum().values
-
+edges = np.logspace(-4, np.log10(40), 51)
 # %% plot
 fig = plt.figure(figsize=(10, 6))
 gs = GridSpec(2, 2, figure=fig)
@@ -193,6 +167,6 @@ fig.subplots_adjust(bottom=0.22)
 for ax, letter in zip(axes, ["a", "b", "c", "d", "e"]):
     ax.text(0.03, 0.9, letter, transform=ax.transAxes, fontsize=14, fontweight="bold")
 fig.tight_layout()
-fig.savefig("plots/publication/overview.pdf", bbox_inches="tight")
+fig.savefig("plots/overview.pdf", bbox_inches="tight")
 plt.show()
 # %%

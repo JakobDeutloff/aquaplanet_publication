@@ -2,13 +2,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from src.read_data import (
-    load_iwp_hists,
+    load_iwp_distributions,
     load_cre,
-    load_random_datasets,
     load_definitions,
 )
-
-# mpl.use("Webagg")
 # %% load data
 temp_deltas = {"jed0022": 4, "jed0033": 2}
 iwp_bins = np.logspace(-4, np.log10(40), 51)
@@ -34,17 +31,16 @@ colors_fluxes = {
     'sw': sw_color,
     'net': net_color,
 }
-datasets = load_random_datasets()
-histograms = load_iwp_hists()
+histograms = load_iwp_distributions()
 cre = load_cre()
 # %% multiply CRE and iwp hist
 cre_folded = {}
 const_iwp_folded = {}
 const_cre_folded = {}
 for run in runs:
-    cre_folded[run] = cre[run] * histograms[run]
-    const_iwp_folded[run] = cre[run] * histograms["jed0011"]
-    const_cre_folded[run] = cre["jed0011"] * histograms[run]
+    cre_folded[run] = cre[run] * histograms[run].values
+    const_iwp_folded[run] = cre[run] * histograms["jed0011"].values
+    const_cre_folded[run] = cre["jed0011"] * histograms[run].values
 # %% calculate integrated CRE and feedback
 cre_integrated = {}
 cre_const_iwp_integrated = {}
@@ -87,7 +83,6 @@ for run in runs[1:]:
     g_cap = (histograms[run] - histograms["jed0011"]).sum() / histograms[
         "jed0011"
     ].sum()
-    print(f"g_cap for {run}: {g_cap*100/temp_deltas[run]} %/K")
     g_prime = (
         (histograms[run] - histograms["jed0011"]) / histograms["jed0011"]
     ) - g_cap
@@ -264,7 +259,7 @@ for i, ax in enumerate(a):
     )
 
 
-fig.savefig("plots/publication/feedback.pdf", bbox_inches="tight")
+fig.savefig("plots/feedback.pdf", bbox_inches="tight")
 plt.show()
 # %% non -linearity of feedback
 feedback_nonlin = {}

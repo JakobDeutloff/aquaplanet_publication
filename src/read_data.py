@@ -1,5 +1,4 @@
 import xarray as xr
-import pickle
 
 runs = ["jed0011", "jed0022", "jed0033"]
 experiments = {
@@ -13,6 +12,7 @@ experiments = {
 def get_path():
     """
     Get the path to the data directory.
+    You will have to modify this function to point to the location where you have stored the data.
     """
     return "/work/bm1183/m301049/icon_hcap_data/publication"
 

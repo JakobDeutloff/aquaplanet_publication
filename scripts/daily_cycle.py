@@ -20,7 +20,7 @@ edges = np.arange(0, 25)
 hists_average = {}
 edges = np.arange(0, 25, 1)
 for run in runs:
-    hists_average[run] = (hists[run].sum("day") / hists['jed0011'].sum())[
+    hists_average[run] = (hists[run].sum("day") / hists[run].sum())[
         "__xarray_dataarray_variable__"
     ].values
 
@@ -45,8 +45,8 @@ for ax in [ax1, ax2]:
     ax.set_xlabel("Local Time / h")
 
 ax1.set_ylabel("P($I$ > 1 kg m$^{-2}$)")
-ax1.set_ylim([0.03, 0.051])
-ax1.set_yticks([0.03, 0.04, 0.05])
+ax1.set_ylim([0.0325, 0.054])
+ax1.set_yticks([0.04, 0.05])
 ax2.set_ylim([0, 1400])
 ax2.set_ylabel("Incoming SW Radiation / W m$^{-2}$", color='grey')
 ax2.set_yticks([0, 700, 1400])
@@ -69,6 +69,6 @@ for run in runs:
     diffs[run] = (max_morning - max_aternoon)
 
 for run in runs[1:]:
-    print(f"Increase in diurnal cycle for {line_labels[run]} compared to control by {(((diffs[run]-diffs['jed0011']) / diffs['jed0011'])*100):.0f}%")
+    print(f"Increase in diurnal cycle for {line_labels[run]} compared to control by {(((diffs[run]-diffs['jed0011']) / diffs['jed0011'] / temp_delats[run])*100):.0f}% per K")
 
 # %%

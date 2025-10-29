@@ -168,12 +168,12 @@ for run in runs[1:]:
     )
 
 
-axes[0, 0].set_ylabel(r"$F_{\mathrm{CRE}}(I)$ / W m$^{-2}$ K$^{-1}$")
-axes[1, 0].set_ylabel(r"$F_{\mathrm{IWP}}(I)$ / W m$^{-2}$ K$^{-1}$")
+axes[0, 0].set_ylabel(r"$F_{\mathrm{C}}(I)$ / W m$^{-2}$ K$^{-1}$")
+axes[1, 0].set_ylabel(r"$F_{\mathrm{P}}(I)$ / W m$^{-2}$ K$^{-1}$")
 axes[2, 0].set_ylabel(r"$F(I)$ / W m$^{-2}$ K$^{-1}$")
 axes[2, 0].set_xlabel(r"$I$ / kg m$^{-2}$")
-axes[0, 1].set_ylabel(r"$F_{\mathrm{CRE}}$ / W m$^{-2}$ K$^{-1}$")
-axes[1, 1].set_ylabel(r"$F_{\mathrm{IWP}}$ / W m$^{-2}$ K$^{-1}$")
+axes[0, 1].set_ylabel(r"$F_{\mathrm{C}}$ / W m$^{-2}$ K$^{-1}$")
+axes[1, 1].set_ylabel(r"$F_{\mathrm{P}}$ / W m$^{-2}$ K$^{-1}$")
 axes[2, 1].set_ylabel(r"$F$ / W m$^{-2}$ K$^{-1}$")
 
 # make legends

@@ -301,3 +301,20 @@ def load_definitions():
         "jed0033": "+2 K",
     }
     return runs, exp_name, colors, labels, sw_color, lw_color, net_color, linestyles
+
+def load_random_datasets():
+    """
+    Load the random datasets for the model.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the random datasets.
+    """
+
+    datasets = {}
+    for run in runs:
+        datasets[run] = xr.open_dataset(
+            f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_randsample_processed_64.nc"
+        )
+    return datasets

@@ -28,9 +28,9 @@ diff = axes[1].pcolormesh(
     iwp_points,
     hrs_binned_net['jed0033']['temp'],
     (hrs_binned_net['jed0033'] - hrs_binned_net['jed0011']).T,
-    cmap=cmap,
-    vmin=-1.5,
-    vmax=1.5,
+    cmap='PiYG',
+    vmin=-0.5,
+    vmax=0.5,
     rasterized=True
 )
 
@@ -38,9 +38,9 @@ axes[2].pcolormesh(
     iwp_points,
     hrs_binned_net['jed0022']['temp'],
     (hrs_binned_net['jed0022'] - hrs_binned_net['jed0011']).T,
-    cmap=cmap,
-    vmin=-1.5,
-    vmax=1.5,
+    cmap='PiYG',
+    vmin=-0.5,
+    vmax=0.5,
     rasterized=True
 )
 
@@ -80,6 +80,7 @@ cb_net.set_label("$Q$ / K day$^{-1}$")
 
 cb_diff = fig.colorbar(mappable=diff, cax=cax2, orientation="horizontal")
 cb_diff.set_label(r"$\Delta Q $ / K day$^{-1}$")
+cb_diff.set_ticks([-0.5, -0.25, 0, 0.25, 0.5])
 
 # add letters
 for i, ax in enumerate(axes):

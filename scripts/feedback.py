@@ -6,6 +6,7 @@ from src.read_data import (
     load_cre,
     load_definitions,
 )
+
 # %% load data
 temp_deltas = {"jed0022": 4, "jed0033": 2}
 iwp_bins = np.logspace(-4, np.log10(40), 51)
@@ -27,12 +28,17 @@ markers = {
     "jed0033": "x",
 }
 colors_fluxes = {
-    'lw': lw_color,
-    'sw': sw_color,
-    'net': net_color,
+    "lw": lw_color,
+    "sw": sw_color,
+    "net": net_color,
 }
 histograms = load_iwp_distributions()
 cre = load_cre()
+
+# %% Define values from Sherwood et al. 2020
+amount_feedback = {"mean": -0.2, "std": 0.2}
+altitude_feedback = {"mean": 0.2, "std": 0.1}
+
 # %% multiply CRE and iwp hist
 cre_folded = {}
 const_iwp_folded = {}
@@ -167,6 +173,34 @@ for run in runs[1:]:
         facecolor=facecolors[run],
     )
 
+# add sherwood estimates with errorbars 
+axes[0, 1].errorbar(
+    0.2,  # x position
+    altitude_feedback["mean"],
+    yerr=altitude_feedback["std"],
+    color=colors_fluxes["lw"],
+    fmt='D',  # 'D' creates a diamond marker
+    capsize=4,  # error bar cap size
+    markersize=4,  # size of the diamond
+    markerfacecolor=colors_fluxes["lw"],  # fill the diamond
+    markeredgecolor=colors_fluxes["lw"],  # edge color of the diamond
+    alpha=0.5
+)
+
+axes[1, 1].errorbar(
+    2.2,
+    amount_feedback["mean"],
+    yerr=amount_feedback["std"],
+    color=colors_fluxes["net"],
+    fmt='D',
+    capsize=4,
+    markersize=4,
+    markerfacecolor=colors_fluxes["net"],
+    markeredgecolor=colors_fluxes["net"],
+    alpha=0.5
+)
+
+
 
 axes[0, 0].set_ylabel(r"$F_{\mathrm{C}}(I)$ / W m$^{-2}$ K$^{-1}$")
 axes[1, 0].set_ylabel(r"$F_{\mathrm{P}}(I)$ / W m$^{-2}$ K$^{-1}$")
@@ -177,9 +211,7 @@ axes[1, 1].set_ylabel(r"$F_{\mathrm{P}}$ / W m$^{-2}$ K$^{-1}$")
 axes[2, 1].set_ylabel(r"$F$ / W m$^{-2}$ K$^{-1}$")
 
 # make legends
-labels = [
-    'LW', 'SW', 'Net', "+2 K", "+4 K"
-]
+labels = ["LW", "SW", "Net", "+2 K", "+4 K"]
 handles = [
     plt.Line2D([0], [0], color=lw_color),
     plt.Line2D([0], [0], color=sw_color),

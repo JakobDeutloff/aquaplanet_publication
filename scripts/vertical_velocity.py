@@ -2,49 +2,38 @@
 import matplotlib.pyplot as plt
 from src.read_data import load_random_datasets, load_definitions
 import numpy as np
+import xarray as xr
+from scipy.stats import skew
 
 # %%
-datasets = load_random_datasets()
 definitions = load_definitions()
-runs = ["jed0011", "jed0033", "jed0022"]
-# %% find height level close to 500 hPa
-height_500 = {}
-for run in runs:
-   diff =  (datasets[run]['pfull'].mean('index')/1e2) - 500
-   height_500[run] = np.abs(diff).argmin().values
+# %% load raw icon data 
+ds_icon = xr.open_dataset('/work/bm1183/m301049/icon_hcap_data/publication/vertical_vel/vel_icon_2_latlon.nc')
 
-# %% select vertical velocity at 500 hPa
-w_500 = {}
-for run in runs:
-   w_500[run] = datasets[run]['wa'].isel(height_2=height_500[run])
+# %%
+ds_era = xr.open_dataset('/work/bm1183/m301049/icon_hcap_data/publication/vertical_vel/era5_vel_2.grb')
 
-# %% calculate histograms 
-hists = {}
-edges = np.arange(-5, 14, 0.5)
-for run in runs:
-    hist, bin_edges = np.histogram(
-        w_500[run].values.flatten(),
-        bins=edges,
-        density=False,
-    )
-    hist = hist / hist.sum()
-    hists[run] = hist
-# %% plot disributions of vertical velocity at 500 hPa
+# %% calculate pressure velocity
+omega = - ds_icon['wa'] * 9.81 * ds_icon['rho'] 
+
+# %% plot hist of w_500
 fig, ax = plt.subplots(figsize=(5, 2.5))
-line_labels = definitions[3]
-colors = definitions[2]
-for run in runs:
-    ax.stairs(
-        hists[run],
-        edges,
-        label=line_labels[run],
-        color=colors[run],
-    )
-ax.set_yscale('log')
+bins=np.arange(-1.2, 1.2, 0.1)
+hist_era = np.histogram(ds_era['w'].values.flatten(), bins=bins, density=True)[0]
+hist_icon = np.histogram(omega.values.flatten(), bins=bins, density=True)[0]
+ax.stairs(hist_era, bins, label='ERA5', color='k', linewidth=3)
+ax.stairs(hist_icon, bins, label='ICON Control', color=definitions[2]['jed0011'], linewidth=1.5,)
+ax.spines[['top', 'right']].set_visible(False)
+ax.set_xlabel(r'$\omega_{\mathrm{500}}$ / Pa s$^{-1}$')
+ax.set_ylabel('P($\omega_{\mathrm{500}}$)')
 ax.legend(frameon=False)
-ax.spines[['right', 'top']].set_visible(False)
-ax.set_xlabel(r'$\omega_{\mathrm{500}}$ / m s$^{-1}$')
-ax.set_ylabel(r'$P(\omega_{\mathrm{500}}$)')
-fig.savefig('plots/vertical_velocity_500hPa_distribution.pdf', bbox_inches='tight')
+fig.savefig('plots/vertical_vel_hist.pdf', bbox_inches='tight')
+
+# %%
+skew_era = np.var(ds_era['w'].values.flatten())
+skew_icon = np.var(omega.values.flatten())
+print(f"ERA5: skew={skew_era:.2f}")
+print(f"ICON: skew={skew_icon:.2f}")
+
 
 # %%

@@ -35,6 +35,10 @@ colors_fluxes = {
 histograms = load_iwp_distributions()
 cre = load_cre()
 
+# %% Define values from Sherwood et al. 2020
+amount_feedback = {"mean": -0.2, "std": 0.2}
+altitude_feedback = {"mean": 0.2, "std": 0.1}
+
 # %% multiply CRE and iwp hist
 cre_folded = {}
 const_iwp_folded = {}
@@ -51,6 +55,8 @@ feedback = {}
 feedback_linear = {}
 feedback_const_iwp = {}
 feedback_const_cre = {}
+dc_feedback = {}
+congestus_feedback = {}
 
 for run in runs:
     cre_integrated[run] = cre_folded[run].sum(dim="iwp")
@@ -78,6 +84,19 @@ feedback_linear["jed0033"] = (
 feedback_linear["jed0022"] = (
     feedback_const_cre["jed0022"] + feedback_const_iwp["jed0022"]
 )
+dc_feedback["jed0033"] = (
+    const_iwp_folded["jed0033"]["sw"] - const_iwp_folded["jed0011"]["sw"]
+).sel(iwp=slice(1e-1, None)).sum(dim="iwp") / 2
+dc_feedback["jed0022"] = (
+    const_iwp_folded["jed0022"]["sw"] - const_iwp_folded["jed0011"]["sw"]
+).sel(iwp=slice(1e-1, None)).sum(dim="iwp") / 4
+congestus_feedback["jed0033"] = (
+    const_iwp_folded["jed0033"]["sw"] - const_iwp_folded["jed0011"]["sw"]
+).sel(iwp=slice(None, 1e-1)).sum(dim="iwp") / 2
+congestus_feedback["jed0022"] = (
+    const_iwp_folded["jed0022"]["sw"] - const_iwp_folded["jed0011"]["sw"]
+).sel(iwp=slice(None, 1e-1)).sum(dim="iwp") / 4
+
 # %% partition IWP feedback into area and opacity feedback
 feedback_area = {}
 feedback_opacity = {}
@@ -95,7 +114,7 @@ for run in runs[1:]:
 
 # %% plot
 fig, axes = plt.subplots(
-    3, 3, figsize=(10, 7), width_ratios=[3, 1, 0.3], constrained_layout=True
+    3, 3, figsize=(10, 7), width_ratios=[3, 1, 0.4], constrained_layout=True
 )
 
 
@@ -153,6 +172,24 @@ for run in runs[1:]:
             facecolor=facecolors[run],
         )
 
+    # plot DC and congestus feedback
+    axes[0, 2].scatter(
+        1,
+        dc_feedback[run].values,
+        color=colors_fluxes["sw"],
+        marker=markers[run],
+        facecolor=facecolors[run],
+    )
+    axes[0, 2].scatter(
+        0,
+        congestus_feedback[run].values,
+        color=colors_fluxes["sw"],
+        marker=markers[run],
+        facecolor=facecolors[run],
+    )
+
+    
+
     # plot area and opacity feedback
     axes[1, 2].scatter(
         0,
@@ -169,6 +206,40 @@ for run in runs[1:]:
         facecolor=facecolors[run],
     )
 
+# add sherwood estimates with errorbars
+axes[0, 1].errorbar(
+    0.2,  # x position
+    altitude_feedback["mean"],
+    yerr=altitude_feedback["std"],
+    color=colors_fluxes["lw"],
+    fmt="D",  # 'D' creates a diamond marker
+    capsize=4,  # error bar cap size
+    markersize=5,  # size of the diamond
+    markerfacecolor=colors_fluxes["lw"],  # fill the diamond
+    markeredgecolor=colors_fluxes["lw"],  # edge color of the diamond
+    alpha=0.5,
+)
+
+axes[1, 2].errorbar(
+    0.2,
+    amount_feedback["mean"],
+    yerr=amount_feedback["std"],
+    color=colors_fluxes["net"],
+    fmt="D",
+    capsize=4,
+    markersize=5,
+    markerfacecolor=colors_fluxes["net"],
+    markeredgecolor=colors_fluxes["net"],
+    alpha=0.5,
+)
+
+axes[2, 1].scatter(
+    2.2,
+    amount_feedback["mean"] + altitude_feedback["mean"],
+    color=colors_fluxes["net"],
+    marker="D",
+    alpha=0.5,
+)
 
 
 axes[0, 0].set_ylabel(r"$F_{\mathrm{C}}(I)$ / W m$^{-2}$ K$^{-1}$")
@@ -202,22 +273,19 @@ handles = [
     axes[2, 2].scatter(
         [0], [0], color="grey", marker="o", linestyle="", facecolors="none"
     ),
+    axes[2, 2].scatter([0], [0], color="grey", marker="D", linestyle=""),
 ]
-labels = [
-    "+2 K",
-    "+4 K",
-]
+labels = ["+2 K", "+4 K", "WCRP"]
 fig.legend(
     handles,
     labels,
-    ncol=2,
-    bbox_to_anchor=(0.73, 0),
+    ncol=3,
+    bbox_to_anchor=(0.69, 0),
     loc="upper left",
     frameon=False,
 )
 
 # configure axes
-axes[0, 2].remove()
 axes[2, 2].remove()
 
 for ax in axes[:, 0]:
@@ -234,7 +302,7 @@ for ax in axes[:, 1]:
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_yticks([-0.3, 0, 0.3, 0.6])
     ax.set_xticks([0, 1, 2])
-    ax.set_xlim([-0.3, 2.3])
+    ax.set_xlim([-0.2, 2.4])
     ax.set_xticklabels(["LW", "SW", "NET"])
 
 axes[1, 2].set_ylim([-0.5, 0.7])
@@ -246,9 +314,19 @@ axes[1, 2].spines[["top", "right"]].set_visible(False)
 axes[1, 2].axhline(0, color="k", linewidth=0.5)
 axes[1, 2].set_xticklabels(["Area", "Opacity"], rotation=-45)
 
+axes[0, 2].set_ylim([-0.5, 0.7])
+axes[0, 2].set_yticks([-0.3, 0, 0.3, 0.6])
+axes[0, 2].set_yticklabels([])
+axes[0, 2].set_xticks([0, 1])
+axes[0, 2].set_xlim([-0.2, 1.2])
+axes[0, 2].spines[["top", "right"]].set_visible(False)
+axes[0, 2].axhline(0, color="k", linewidth=0.5)
+axes[0, 2].set_xticklabels(["Cong.", "DC"], rotation=-45)
+
 # add letters
 a = list(axes[:, 0:2].flatten())
-a.insert(4, axes[1, 2])
+a.insert(2, axes[0, 2])
+a.insert(5, axes[1, 2])
 for i, ax in enumerate(a):
     ax.text(
         0.03,

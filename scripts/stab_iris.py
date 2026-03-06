@@ -27,7 +27,7 @@ for run in runs:
     )
     axes[0].set_xlabel("Heating Rate / K day$^{-1}$")
     axes[1].plot(
-        stab[run],
+        -stab[run],
         stab[run]["temp"],
         label=line_labels[run],
         color=colors[run],

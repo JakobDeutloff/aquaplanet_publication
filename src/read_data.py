@@ -79,9 +79,9 @@ def load_daily_cycle_dists():
         daily_cycle_dists[run] = xr.open_dataset(
             f"{path}/distributions/{run}_deep_clouds_daily_cycle.nc"
         )
-
+    dist_ccic = xr.open_dataset(f"{path}/distributions/ccic_2d_monthly_sea.nc")
     SW_in = xr.open_dataarray(f"{path}/incoming_sw/SW_in_daily_cycle.nc")
-    return daily_cycle_dists, SW_in
+    return daily_cycle_dists, dist_ccic, SW_in
 
 def load_hr_components():
     """
@@ -133,7 +133,7 @@ def load_vgrid():
     return vgrid
 
 
-def load_cre():
+def load_cre(name='raw'):
     """
     Load  HCRE.
 
@@ -146,7 +146,7 @@ def load_cre():
     cre_data = {}
     for run in runs:
         cre_data[run] = xr.open_dataset(
-            f"{path}/cre/{run}_cre_raw.nc"
+            f"{path}/cre/{run}_cre_{name}.nc"
         )
 
     return cre_data
@@ -177,17 +177,24 @@ def load_hr_and_cf():
         Dictionary containing the longwave heating rates.
     dict
         Dictionary containing the shortwave heating rates.
+    xr.Dataset
+        Dataset with heating rate difference dur to changes in flux divergence
+    xr.Dataset
+        Dataset with heating rate difference dur to changes in density
     dict
         Dictionary containing cloud fraction"""
+
     
     path = get_path()
     hrs_binned = xr.open_dataset(f"{path}/heating_rates/hr_net.nc")
     hrs_sw_binned = xr.open_dataset(f"{path}/heating_rates/hr_sw.nc")
     hrs_lw_binned = xr.open_dataset(f"{path}/heating_rates/hr_lw.nc")
     cf_binned = xr.open_dataset(f"{path}/heating_rates/cf.nc")
+    diff_flux = xr.open_dataset(f"{path}/heating_rates/diff_flux.nc")
+    diff_dens = xr.open_dataset(f"{path}/heating_rates/diff_dens.nc")
 
 
-    return hrs_binned, hrs_lw_binned, hrs_sw_binned, cf_binned
+    return hrs_binned, hrs_lw_binned, hrs_sw_binned, diff_flux, diff_dens, cf_binned
 
 def load_sw_metrics():
     """
@@ -302,19 +309,44 @@ def load_definitions():
     }
     return runs, exp_name, colors, labels, sw_color, lw_color, net_color, linestyles
 
-def load_random_datasets():
+def load_lowcloud_fractions():
     """
-    Load the random datasets for the model.
+    Load low cloud fractions for the runs.
 
     Returns
     -------
     dict
-        Dictionary containing the random datasets.
+        Dictionary containing the low cloud fractions with tuning factor.
+    dict
+        Dictionary containing the low cloud fractions without tuning factor.
     """
-
-    datasets = {}
+    path = get_path()
+    lwp_fraction = {}
+    cong_fraction = {}
+    lc_fraction = {}
     for run in runs:
-        datasets[run] = xr.open_dataset(
-            f"/work/bm1183/m301049/icon_hcap_data/{experiments[run]}/production/random_sample/{run}_randsample_processed_64.nc"
-        )
-    return datasets
+        lwp_fraction[run] = xr.open_dataarray(f"{path}/lc_fraction/{run}_lwp_fraction.nc")
+        cong_fraction[run] = xr.open_dataarray(f"{path}/lc_fraction/{run}_cong_fraction.nc")
+        lc_fraction[run] = xr.open_dataarray(f"{path}/lc_fraction/{run}_lc_frac_raw.nc")
+
+    return lwp_fraction, cong_fraction, lc_fraction
+
+def load_emissivity_albedo():
+    """
+    Load the emissivity and albedo data.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the emissivity data.
+    dict
+        Dictionary containing the albedo data.
+    """
+    path = get_path()
+    emissivity = {}
+    albedo = {}
+    for run in runs:
+        emissivity[run] = xr.open_dataarray(f"{path}/opacity/{run}_emissivity.nc")
+        albedo[run] = xr.open_dataarray(f"{path}/opacity/{run}_albedo.nc")
+
+    return emissivity, albedo

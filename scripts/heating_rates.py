@@ -6,7 +6,7 @@ from src.read_data import load_definitions, load_hr_and_cf
 runs, exp_name, colors, line_labels, sw_color, lw_color, net_color, linestyles = (
     load_definitions()
 )
-hrs_binned_net, hrs_binned_lw, hrs_binned_sw, cf_binned = load_hr_and_cf()
+hrs_binned_net, hrs_binned_lw, hrs_binned_sw, diff_flux, diff_dens, cf_binned = load_hr_and_cf()
 iwp_bins = np.logspace(-4, np.log10(40), 51)
 iwp_points = (iwp_bins[:-1] + iwp_bins[1:]) / 2
 
@@ -94,4 +94,66 @@ for i, ax in enumerate(axes):
     )
 
 fig.savefig("plots/heating_rates.pdf", bbox_inches="tight", dpi=300)
+# %% plot heating rates difference for 4K experiment with constant rho and constant flux
+fig, axes = plt.subplots(1, 3, figsize=(10, 5), sharex=True, sharey=True)
+
+axes[0].pcolormesh(
+    iwp_points,
+    hrs_binned_net["jed0022"]["temp"],
+    (hrs_binned_net["jed0022"] - hrs_binned_net["jed0011"]).T,
+    cmap='PiYG',
+    vmin=-0.5,
+    vmax=0.5,
+    rasterized=True,
+)
+
+axes[1].pcolormesh(
+    iwp_points,
+    diff_flux["temp"],
+    diff_flux['jed0022'].T,
+    cmap='PiYG',
+    vmin=-0.5,
+    vmax=0.5,
+    rasterized=True,
+)
+
+im = axes[2].pcolormesh(
+    iwp_points,
+    diff_dens["temp"],
+    diff_dens['jed0022'].T,
+    cmap='PiYG',
+    vmin=-0.5,
+    vmax=0.5,
+    rasterized=True,
+)
+
+
+for ax in axes:
+    ax.set_xscale("log")
+    ax.set_xlim(iwp_bins[0], iwp_bins[-1])
+    ax.invert_yaxis()
+    ax.set_ylim([260, 190])
+    ax.set_xlabel("$I$ / kg m$^{-2}$")
+
+axes[0].set_ylabel("Temperature / K")
+axes[0].set_title("Total Change")
+axes[1].set_title("Change from Flux Convergence")
+axes[2].set_title("Change from Density")
+
+# label axes
+for i, ax in enumerate(axes):
+    ax.text(
+        -0.06,
+        1.03,
+        chr(97 + i),
+        transform=ax.transAxes,
+        fontsize=16,
+        fontweight="bold",
+    )
+
+cb = fig.colorbar(im, ax=axes, orientation="horizontal", fraction=0.1, pad=-0.35, label=r"$\Delta Q$ / K day$^{-1}$", aspect=40)
+cb.set_ticks([-0.5, -0.25, 0, 0.25, 0.5])
+fig.tight_layout()
+fig.savefig("plots/heating_rates_diff_flux_density.pdf", bbox_inches="tight", dpi=300)
+
 # %%

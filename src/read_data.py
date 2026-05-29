@@ -77,7 +77,7 @@ def load_daily_cycle_dists():
     daily_cycle_dists = {}
     for run in runs:
         daily_cycle_dists[run] = xr.open_dataset(
-            f"{path}/distributions/{run}_deep_clouds_daily_cycle.nc"
+            f"{path}/distributions/{run}_daily_cycle_hist_2d.nc"
         )
     dist_ccic = xr.open_dataset(f"{path}/distributions/ccic_2d_monthly_sea.nc")
     SW_in = xr.open_dataarray(f"{path}/incoming_sw/SW_in_daily_cycle.nc")

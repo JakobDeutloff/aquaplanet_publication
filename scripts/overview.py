@@ -169,4 +169,12 @@ for ax, letter in zip(axes, ["a", "b", "c", "d", "e"]):
 fig.tight_layout()
 fig.savefig("plots/overview.pdf", bbox_inches="tight")
 plt.show()
+# %% calculate fraction of IWP > 1 kg m^-2
+icon_control = histograms["jed0011"].sel(iwp_points=slice(1, None)).sum() 
+two_c_ice = histograms["cloudsat"].sel(iwp_points=slice(1, None)).sum()
+dar_dar = histograms["dardar"].sel(iwp_points=slice(1, None)).sum()
+print(f"Fraction of IWP > 1 kg m^-2 in control: {icon_control.values:.4f}")
+print(f"Fraction of IWP > 1 kg m^-2 in 2C-ICE: {two_c_ice.values:.4f}")
+print(f"Fraction of IWP > 1 kg m^-2 in DarDar v2: {dar_dar.values:.4f}")
+
 # %%

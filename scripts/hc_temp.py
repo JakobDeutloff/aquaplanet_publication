@@ -20,7 +20,7 @@ temp_binned = load_hc_temp()
 # %% plot hc_temp with ozone run
 fig, axes = plt.subplots(2, 1, figsize=(5, 3.5), sharex="col", height_ratios=[3, 1.5])
 
-for run in runs:
+for run in ['jed0011']:
     temp_binned[run].plot(
         ax=axes[0],
         color=colors[run],
@@ -53,6 +53,9 @@ axes[1].set_ylim([-1, 1])
 axes[1].set_xlabel(r"$I$ / kg m$^{-2}$")
 
 handles, names = axes[0].get_legend_handles_labels()
+handles_2, names_2 = axes[1].get_legend_handles_labels()
+handles = handles + handles_2
+names = names + names_2
 
 fig.legend(
     handles=handles,
